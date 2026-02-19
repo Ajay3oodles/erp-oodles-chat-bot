@@ -2,35 +2,36 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../services/api';
 
 const SESSION_KEY = 'chatbot_session_id';
+const TAB_KEY     = 'tab_active';
 
-// ✅ On hard reload (Ctrl+Shift+R or Shift+F5), clear session so welcome screen shows
-// window.performance.navigation.type === 1 means normal reload
-// type === 0 means navigation (first visit or hard reload acts same in modern browsers)
-// We use sessionStorage to detect hard reload vs soft reload
-function isHardReload() {
-  const visited = sessionStorage.getItem('app_visited');
-  if (!visited) {
-    // First visit or hard reload — sessionStorage is cleared on hard reload
-    sessionStorage.setItem('app_visited', '1');
+// ✅ The only reliable way to distinguish new tab vs reload:
+// - sessionStorage is CLEARED when a new tab is opened fresh (typed URL / Ctrl+T)
+// - sessionStorage is PRESERVED on both soft and hard reload
+// So: if sessionStorage has TAB_KEY → same tab reloading → keep chat
+//     if sessionStorage is empty    → new tab → show welcome
+function isNewTab() {
+  const active = sessionStorage.getItem(TAB_KEY);
+  if (!active) {
+    sessionStorage.setItem(TAB_KEY, '1');
     return true;
   }
   return false;
 }
 
 export function useChat() {
-  const [messages, setMessages]         = useState([]);
-  const [sessionId, setSessionId]       = useState(null);
-  const [sessionName, setSessionName]   = useState('');
-  const [isTyping, setIsTyping]         = useState(false);
-  const [error, setError]               = useState(null);
-  const [isLoading, setIsLoading]       = useState(false);
-  const [animatedIds, setAnimatedIds]   = useState(new Set());
-  const [isSending, setIsSending]       = useState(false);
+  const [messages, setMessages]       = useState([]);
+  const [sessionId, setSessionId]     = useState(null);
+  const [sessionName, setSessionName] = useState('');
+  const [isTyping, setIsTyping]       = useState(false);
+  const [isSending, setIsSending]     = useState(false);
+  const [error, setError]             = useState(null);
+  const [isLoading, setIsLoading]     = useState(false);
+  const [animatedIds, setAnimatedIds] = useState(new Set());
 
-  // ✅ On hard reload → clear localStorage so welcome screen shows
-  // On soft reload (F5) → keep session and load history
+  // ✅ New tab → clear localStorage → show welcome screen
+  // Hard reload / soft reload → sessionStorage preserved → load chat
   const [hasSession, setHasSession] = useState(() => {
-    if (isHardReload()) {
+    if (isNewTab()) {
       localStorage.removeItem(SESSION_KEY);
       return false;
     }
@@ -38,17 +39,15 @@ export function useChat() {
   });
 
   const messagesEndRef = useRef(null);
-
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, isTyping]);
 
-  // Load history on mount if session exists (soft reload)
   useEffect(() => {
     const storedId = localStorage.getItem(SESSION_KEY);
-    if (storedId) {
+    if (storedId && hasSession) {
       setSessionId(parseInt(storedId, 10));
       loadHistory(parseInt(storedId, 10));
     }
@@ -59,18 +58,15 @@ export function useChat() {
     try {
       const res   = await api.getChats(sid);
       const chats = Array.isArray(res) ? res : (res?.data || []);
-
-      // Alternating rows: even index = user, odd index = bot
       const mapped = chats.map((chat, index) => ({
         id:          `msg-${chat.id}`,
         role:        index % 2 === 0 ? 'user' : 'bot',
         content:     chat.message,
         timestamp:   chat.created_at,
-        fromHistory: true, // never animate history
+        fromHistory: true,
       }));
-
       setMessages(mapped);
-    } catch (e) {
+    } catch {
       setError('Could not load chat history');
     } finally {
       setIsLoading(false);
@@ -80,16 +76,15 @@ export function useChat() {
   const sendMessage = async ({ query, leadData }) => {
     if (!query.trim()) return;
 
-    const userMsgId = `u-${Date.now()}`;
     setMessages(prev => [...prev, {
-      id:          userMsgId,
+      id:          `u-${Date.now()}`,
       role:        'user',
       content:     query,
       timestamp:   new Date().toISOString(),
       fromHistory: false,
     }]);
 
-    setIsSending(true);  // immediate spinner before API responds
+    setIsSending(true);
     setIsTyping(true);
     setError(null);
 
@@ -99,7 +94,7 @@ export function useChat() {
         : null;
 
       const body = { query };
-      if (currentSessionId)  body.session_id = currentSessionId;
+      if (currentSessionId) body.session_id = currentSessionId;
       else if (leadData) {
         body.first_name = leadData.name;
         body.email      = leadData.email;
@@ -117,9 +112,8 @@ export function useChat() {
       }
 
       const botMsgId = `b-${Date.now()}`;
-      setIsSending(false);  // hide spinner, start typewriter
+      setIsSending(false);
       setAnimatedIds(prev => new Set([...prev, botMsgId]));
-
       setMessages(prev => [...prev, {
         id:          botMsgId,
         role:        'bot',
@@ -142,7 +136,7 @@ export function useChat() {
       try { await api.deleteSession(parseInt(currentId, 10)); } catch (_) {}
     }
     localStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem('app_visited'); // ✅ reset so next load detects fresh start
+    sessionStorage.removeItem(TAB_KEY); // so next load acts like new tab
     setSessionId(null);
     setMessages([]);
     setSessionName('');

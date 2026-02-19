@@ -4,7 +4,7 @@ import LeadForm from './LeadForm';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
-import { useChat } from '../hooks/useChat';
+import { useChat } from '../../hooks/useChat';
 
 export default function ChatWidget() {
   const [open, setOpen]     = useState(false);
