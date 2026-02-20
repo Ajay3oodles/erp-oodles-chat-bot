@@ -1,87 +1,95 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../services/api';
 
-const SESSION_KEY = 'chatbot_session_id';
-const TAB_KEY     = 'tab_active';
-
-// ✅ The only reliable way to distinguish new tab vs reload:
-// - sessionStorage is CLEARED when a new tab is opened fresh (typed URL / Ctrl+T)
-// - sessionStorage is PRESERVED on both soft and hard reload
-// So: if sessionStorage has TAB_KEY → same tab reloading → keep chat
-//     if sessionStorage is empty    → new tab → show welcome
+// ─────────────────────────────────────────────────────────────
+// Tab detection — distinguishes new tab (clear session) from
+// page reload (restore session from localStorage)
+// ─────────────────────────────────────────────────────────────
 function isNewTab() {
-  const active = sessionStorage.getItem(TAB_KEY);
-  if (!active) {
-    sessionStorage.setItem(TAB_KEY, '1');
-    return true;
+  const key = 'chatbot_tab_active';
+  if (!sessionStorage.getItem(key)) {
+    sessionStorage.setItem(key, '1');
+    return true;   // brand-new tab → clear old session
   }
-  return false;
+  return false;    // same tab reloading → restore session
 }
 
+// ─────────────────────────────────────────────────────────────
+// useChat hook
+// All state lives here. ChatWidget + MessageBubble are dumb.
+// ─────────────────────────────────────────────────────────────
 export function useChat() {
-  const [messages, setMessages]       = useState([]);
-  const [sessionId, setSessionId]     = useState(null);
-  const [sessionName, setSessionName] = useState('');
-  const [isTyping, setIsTyping]       = useState(false);
-  const [isSending, setIsSending]     = useState(false);
-  const [error, setError]             = useState(null);
-  const [isLoading, setIsLoading]     = useState(false);
-  const [animatedIds, setAnimatedIds] = useState(new Set());
+  const SESSION_KEY = 'chatbot_session_id';
 
-  // ✅ New tab → clear localStorage → show welcome screen
-  // Hard reload / soft reload → sessionStorage preserved → load chat
-  const [hasSession, setHasSession] = useState(() => {
-    if (isNewTab()) {
-      localStorage.removeItem(SESSION_KEY);
-      return false;
-    }
-    return !!localStorage.getItem(SESSION_KEY);
-  });
+  // ── State ──────────────────────────────────────────────────
+  const [messages,     setMessages]     = useState([]);
+  const [sessionId,    setSessionId]    = useState(null);
+  const [sessionName,  setSessionName]  = useState('');
+  const [isTyping,     setIsTyping]     = useState(false);   // bot thinking
+  const [isSending,    setIsSending]    = useState(false);   // request in-flight
+  const [isLoading,    setIsLoading]    = useState(false);   // loading history
+  const [error,        setError]        = useState(null);
+  const [animatedIds,  setAnimatedIds]  = useState(new Set());
 
   const messagesEndRef = useRef(null);
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
 
-  useEffect(() => { scrollToBottom(); }, [messages, isTyping]);
-
+  // ── Init — restore or clear session ───────────────────────
   useEffect(() => {
-    const storedId = localStorage.getItem(SESSION_KEY);
-    if (storedId && hasSession) {
-      setSessionId(parseInt(storedId, 10));
-      loadHistory(parseInt(storedId, 10));
+    if (isNewTab()) {
+      // New tab → start fresh, no history
+      localStorage.removeItem(SESSION_KEY);
+      return;
     }
-  }, []);
+    // Same tab reload → restore session and load history
+    const storedId = localStorage.getItem(SESSION_KEY);
+    if (storedId) {
+      const id = parseInt(storedId, 10);
+      setSessionId(id);
+      loadHistory(id);
+    }
+  }, []); // eslint-disable-line
 
+  // ── Auto-scroll ────────────────────────────────────────────
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // ── Load history on restore ────────────────────────────────
   const loadHistory = async (sid) => {
     setIsLoading(true);
     try {
-      const res   = await api.getChats(sid);
-      const chats = Array.isArray(res) ? res : (res?.data || []);
-      const mapped = chats.map((chat, index) => ({
-        id:          `msg-${chat.id}`,
+      const res  = await api.getChats(sid);
+      const data = Array.isArray(res) ? res : (res?.data || []);
+
+      const mapped = data.map((chat, index) => ({
+        id:          `hist-${chat.id}`,
         role:        index % 2 === 0 ? 'user' : 'bot',
         content:     chat.message,
+        fromHistory: true,   // disables typewriter for old messages
         timestamp:   chat.created_at,
-        fromHistory: true,
       }));
       setMessages(mapped);
-    } catch {
-      setError('Could not load chat history');
+    } catch (e) {
+      console.error('[useChat] Failed to load history:', e);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const sendMessage = async ({ query, leadData }) => {
-    if (!query.trim()) return;
+  // ── Send message ───────────────────────────────────────────
+  // NOTE: leadData param is REMOVED.
+  // The backend now extracts contact info from conversation naturally.
+  const sendMessage = useCallback(async ({ query }) => {
+    if (!query?.trim() || isSending) return;
 
+    const userMsgId = `user-${Date.now()}`;
+
+    // Optimistically append user message
     setMessages(prev => [...prev, {
-      id:          `u-${Date.now()}`,
-      role:        'user',
-      content:     query,
-      timestamp:   new Date().toISOString(),
-      fromHistory: false,
+      id:        userMsgId,
+      role:      'user',
+      content:   query.trim(),
+      timestamp: new Date().toISOString(),
     }]);
 
     setIsSending(true);
@@ -89,65 +97,75 @@ export function useChat() {
     setError(null);
 
     try {
-      const currentSessionId = localStorage.getItem(SESSION_KEY)
-        ? parseInt(localStorage.getItem(SESSION_KEY), 10)
-        : null;
+      const body = { query: query.trim() };
+      if (sessionId) body.session_id = sessionId;
+      // ↑ No first_name / email / phone — removed entirely
 
-      const body = { query };
-      if (currentSessionId) body.session_id = currentSessionId;
-      else if (leadData) {
-        body.first_name = leadData.name;
-        body.email      = leadData.email;
-        body.phone      = leadData.phone;
+      const raw = await api.sendQuery(body);
+      // Backend wraps in { success, message, data: {...} } — unwrap it
+      const res = raw?.data ?? raw;
+
+      // Persist session ID (always returned now, not just on first message)
+      if (res.session_id) {
+        setSessionId(res.session_id);
+        localStorage.setItem(SESSION_KEY, String(res.session_id));
+      }
+      if (res.session_name) {
+        setSessionName(res.session_name);
       }
 
-      const res      = await api.sendQuery(body);
-      const response = res?.data || res;
+      const botMsgId = `bot-${Date.now()}`;
 
-      if (response.session_id && !currentSessionId) {
-        localStorage.setItem(SESSION_KEY, response.session_id);
-        setSessionId(response.session_id);
-        setHasSession(true);
-        if (response.session_name) setSessionName(response.session_name);
-      }
-
-      const botMsgId = `b-${Date.now()}`;
-      setIsSending(false);
-      setAnimatedIds(prev => new Set([...prev, botMsgId]));
       setMessages(prev => [...prev, {
-        id:          botMsgId,
-        role:        'bot',
-        content:     response.answer,
-        timestamp:   new Date().toISOString(),
-        fromHistory: false,
+        id:        botMsgId,
+        role:      'bot',
+        content:   res.answer,
+        timestamp: new Date().toISOString(),
       }]);
 
+      // Mark for typewriter animation
+      setAnimatedIds(prev => new Set([...prev, botMsgId]));
+
     } catch (e) {
-      setError(e.message || 'Something went wrong');
+      setError(e.message || 'Something went wrong. Please try again.');
+      // Remove the optimistic user message on failure
+      setMessages(prev => prev.filter(m => m.id !== userMsgId));
     } finally {
       setIsSending(false);
       setIsTyping(false);
     }
-  };
+  }, [sessionId, isSending]);
 
-  const startNewConversation = async () => {
-    const currentId = localStorage.getItem(SESSION_KEY);
-    if (currentId) {
-      try { await api.deleteSession(parseInt(currentId, 10)); } catch (_) {}
+  // ── Start new conversation ─────────────────────────────────
+  const startNewConversation = useCallback(async () => {
+    if (sessionId) {
+      try { await api.deleteSession(sessionId); } catch (_) {}
     }
     localStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem(TAB_KEY); // so next load acts like new tab
-    setSessionId(null);
     setMessages([]);
+    setSessionId(null);
     setSessionName('');
-    setHasSession(false);
     setError(null);
     setAnimatedIds(new Set());
-  };
+  }, [sessionId]);
+
+  const clearError = useCallback(() => setError(null), []);
 
   return {
-    messages, sessionId, sessionName, isTyping, isSending, isLoading,
-    error, hasSession, animatedIds, sendMessage, startNewConversation,
-    messagesEndRef, clearError: () => setError(null),
+    // State
+    messages,
+    sessionId,
+    sessionName,
+    isTyping,
+    isSending,
+    isLoading,
+    error,
+    animatedIds,
+    messagesEndRef,
+
+    // Actions
+    sendMessage,
+    startNewConversation,
+    clearError,
   };
 }
