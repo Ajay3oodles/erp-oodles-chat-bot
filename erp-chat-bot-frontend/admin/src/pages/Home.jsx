@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import ChatWidget from './components/ChatWidget';
-import DocumentsPage from './pages/Documents';
+import { useNavigate } from 'react-router-dom';
+import ChatWidget from '../components/ChatWidget';
+
 const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
@@ -18,9 +18,9 @@ const STATS = [
   { value: '24/7', label: 'AI Support' },
 ];
 
-function Home() {
+export default function Home() {
   const [mounted, setMounted] = useState(false);
-  const navigate = useNavigate();
+  const navigate = useNavigate;  // kept for reference but unused
   useEffect(() => { setTimeout(() => setMounted(true), 100); }, []);
 
   return (
@@ -36,7 +36,7 @@ function Home() {
         style={{ background: 'radial-gradient(circle, #0077ff 0%, transparent 70%)', filter: 'blur(40px)' }} />
 
       {PARTICLES.map(p => (
-        <div key={p.id} className="absolute rounded-full pointer-events-none"
+        <div key={p.id} className="absolute rounded-full"
           style={{
             left: `${p.x}%`, top: `${p.y}%`,
             width: p.size, height: p.size,
@@ -46,12 +46,10 @@ function Home() {
           }} />
       ))}
 
-      {/* Nav */}
-     <nav className="relative flex items-center justify-between px-8 py-5 border-b accent-border" style={{ zIndex: 100 }}>        <img
-          src="https://erpsolutions.oodles.io/wp-content/themes/ERP/custom_inc/image/home/erp_new_logo.png"
+      <nav className="relative z-10 flex items-center justify-between px-8 py-5 border-b accent-border">
+        <img src="https://erpsolutions.oodles.io/wp-content/themes/ERP/custom_inc/image/home/erp_new_logo.png"
           alt="OodlesERP" className="h-9 object-contain"
-          onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
-        />
+          onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
         <div style={{display:'none'}} className="items-center gap-2">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
             style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-2))' }}>O</div>
@@ -63,14 +61,14 @@ function Home() {
             <a key={item} href="#" className="text-sm font-medium transition-colors duration-200"
               style={{ color: 'var(--text-muted)' }}
               onMouseEnter={e => e.target.style.color = 'var(--accent)'}
-              onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}
-            >{item}</a>
+              onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}>
+              {item}
+            </a>
           ))}
         </div>
 
-        {/* ✅ Documents button + Contact Us */}
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/documents')}
+          <button onClick={() => window.location.href = '/documents'}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"
             style={{ background: 'rgba(0,194,255,0.08)', border: '1px solid rgba(0,194,255,0.2)', color: '#00c2ff' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -86,7 +84,6 @@ function Home() {
         </div>
       </nav>
 
-      {/* Hero */}
       <main className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-6 text-center">
         <div className={`transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 text-xs font-semibold tracking-widest uppercase accent-border"
@@ -135,18 +132,6 @@ function Home() {
         </div>
       </main>
 
-      <ChatWidget />
     </div>
-  );
-}
-
-export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/documents" element={<DocumentsPage />} />
-      </Routes>
-    </BrowserRouter>
   );
 }
