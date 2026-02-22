@@ -853,7 +853,7 @@ export default function DocumentsPage() {
           )}
           {view==='session-detail' && selectedSession && (
             <p className="text-sm mt-1" style={{ color:'#7a9bb5' }}>
-              Created {formatDate(selectedSession.created_at)} · Token: {selectedSession.session_token||'—'}
+              Created {formatDate(selectedSession.created_at) }
             </p>
           )}
         </div>
