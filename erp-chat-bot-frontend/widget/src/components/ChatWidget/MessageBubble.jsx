@@ -1,79 +1,89 @@
-import React, { useState, useRef, useEffect } from 'react';
+// src/components/ChatWidget/MessageBubble.jsx
+import React, { useState, useEffect, useRef } from 'react';
 
-function useTypewriter(text, shouldAnimate, speed = 18) {
-  const [displayed, setDisplayed] = useState(shouldAnimate ? '' : text);
-  const [done, setDone]           = useState(!shouldAnimate);
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    if (!shouldAnimate) { setDisplayed(text); setDone(true); return; }
-    let idx = 0;
-    setDisplayed(''); setDone(false);
-    const tick = () => {
-      idx++;
-      setDisplayed(text.slice(0, idx));
-      if (idx < text.length) {
-        const ch    = text[idx - 1];
-        const delay = (ch === '.' || ch === '!' || ch === '?') ? speed * 8
-                    : ch === ','                                ? speed * 4 : speed;
-        timerRef.current = setTimeout(tick, delay);
-      } else { setDone(true); }
-    };
-    timerRef.current = setTimeout(tick, speed);
-    return () => clearTimeout(timerRef.current);
-  }, [text, shouldAnimate]);
-
-  return { displayed, done };
-}
+const TYPING_SPEED = 18; // ms per character
 
 export default function MessageBubble({ message, animate }) {
   const isUser = message.role === 'user';
-  const shouldAnimate = animate === true && !isUser && !message.fromHistory;
-  const { displayed, done } = useTypewriter(message.content, shouldAnimate, 18);
 
-  const bubbleStyle = isUser ? {
-    alignSelf: 'flex-end',
-    background: '#ffffff',
-    color: '#1e293b',
-    borderRadius: '16px 16px 4px 16px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-    border: '1px solid #e2e8f0',
-  } : {
-    alignSelf: 'flex-start',
-    background: '#ffffff',
-    color: '#1e293b',
-    borderRadius: '16px 16px 16px 4px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-    border: '1px solid #e2e8f0',
-  };
+  const [displayed, setDisplayed] = useState(
+    animate && !isUser ? '' : message.content
+  );
+  const indexRef = useRef(0);
+  const frameRef = useRef(null);
+
+  useEffect(() => {
+    if (!animate || isUser) return;
+    indexRef.current = 0;
+    setDisplayed('');
+    const content = message.content || '';
+    const tick = () => {
+      if (indexRef.current < content.length) {
+        indexRef.current += 1;
+        setDisplayed(content.slice(0, indexRef.current));
+        frameRef.current = setTimeout(tick, TYPING_SPEED);
+      }
+    };
+    frameRef.current = setTimeout(tick, TYPING_SPEED);
+    return () => clearTimeout(frameRef.current);
+  }, [animate, isUser, message.content]);
+
+  const stillTyping = animate && !isUser && displayed.length < (message.content || '').length;
 
   return (
     <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      width: '100%',
-      marginBottom: '16px',
-      alignItems: isUser ? 'flex-end' : 'flex-start',
-      animation: 'ow-slide-up 0.2s ease-out',
+      display:'flex',
+      flexDirection: isUser ? 'row-reverse' : 'row',
+      alignItems:'flex-end',
+      gap:8, marginBottom:10,
     }}>
+      {/* Bot avatar */}
+      {!isUser && (
+        <div style={{
+          width:28, height:28, borderRadius:'50%',
+          background:'#ffffff',
+          border:'1.5px solid #c7dcf8',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          flexShrink:0, padding:3,
+          boxShadow:'0 1px 4px rgba(26,86,219,0.12)',
+        }}>
+          <img
+            src="https://artificialintelligence.oodles.io/public/css/svg/icon.png"
+            alt="AI"
+            style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }}
+            onError={e => { e.target.style.display = 'none'; }}
+          />
+        </div>
+      )}
+
+      {/* Bubble */}
       <div style={{
-        maxWidth: '85%',
-        padding: '12px 16px',
-        fontSize: '14px',
-        lineHeight: '1.6',
-        wordBreak: 'break-word',
-        whiteSpace: 'pre-wrap',
-        fontWeight: 400,
-        ...bubbleStyle,
+        maxWidth:'75%',
+        padding:'9px 13px',
+        borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+        background: isUser
+          ? 'linear-gradient(135deg, #1a56db, #1565C0)'
+          : '#ffffff',
+        color: isUser ? '#ffffff' : '#1a237e',
+        fontSize:13, lineHeight:1.55,
+        boxShadow: isUser
+          ? '0 2px 10px rgba(26,86,219,0.28)'
+          : '0 2px 8px rgba(26,86,219,0.09)',
+        border: isUser ? 'none' : '1px solid #dbeafe',
+        wordBreak:'break-word', whiteSpace:'pre-wrap',
       }}>
         {displayed}
-        {!done && (
+        {stillTyping && (
           <span style={{
-            display: 'inline-block', width: 2, height: 14, marginLeft: 2,
-            verticalAlign: 'middle', borderRadius: 2, background: '#94a3b8',
-            animation: 'ow-blink 0.7s step-end infinite',
+            display:'inline-block', width:2, height:'1em',
+            background:'#1a56db', marginLeft:2,
+            verticalAlign:'text-bottom',
+            animation:'ow-blink 0.7s step-end infinite',
           }} />
         )}
+        <style>{`
+          @keyframes ow-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        `}</style>
       </div>
     </div>
   );

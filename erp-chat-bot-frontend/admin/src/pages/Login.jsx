@@ -1,371 +1,259 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'oodles@123';
-
-// Floating particle data — generated once, stable across renders
-const PARTICLES = Array.from({ length: 40 }, (_, i) => ({
-  id: i,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  size: Math.random() * 2 + 1,
-  delay: Math.random() * 6,
-  duration: Math.random() * 8 + 6,
-  opacity: Math.random() * 0.4 + 0.1,
-}));
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export default function Login() {
-  const [username,  setUsername]  = useState('');
-  const [password,  setPassword]  = useState('');
-  const [error,     setError]     = useState('');
-  const [loading,   setLoading]   = useState(false);
-  const [showPass,  setShowPass]  = useState(false);
-  const [mounted,   setMounted]   = useState(false);
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
+  const [error,    setError]    = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [mounted,  setMounted]  = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect if already logged in
-    if (sessionStorage.getItem('admin_auth') === 'true') {
+    if (localStorage.getItem('admin_access_token')) {
       navigate('/dashboard', { replace: true });
       return;
     }
-    setTimeout(() => setMounted(true), 80);
+    setTimeout(() => setMounted(true), 60);
   }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    // Simulate slight delay for UX feel
-    await new Promise(r => setTimeout(r, 600));
-
-    if (username.trim() === ADMIN_USER && password === ADMIN_PASS) {
-      sessionStorage.setItem('admin_auth', 'true');
+    try {
+      const res  = await fetch(`${API_BASE}/api/auth/login/`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: email.trim(), password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || data.detail || 'Invalid credentials');
+        setLoading(false);
+        return;
+      }
+      localStorage.setItem('admin_access_token',  data.access);
+      localStorage.setItem('admin_refresh_token', data.refresh);
+      localStorage.setItem('admin_user_email',    data.email);
+      localStorage.setItem('admin_user_name',     data.name || 'Admin');
       navigate('/dashboard', { replace: true });
-    } else {
-      setError('Invalid username or password');
+    } catch {
+      setError('Network error — please try again');
       setLoading(false);
     }
   };
 
+  /* ── inline styles ── */
+  const page = {
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    /* exact gradient from screenshot: top ≈ deep blue, bottom ≈ lighter blue */
+    background: 'linear-gradient(175deg, #1a4fa0 0%, #1e63c8 45%, #3b8be8 100%)',
+    fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+    padding: '24px 16px',
+  };
+
+  const card = {
+    width: '100%',
+    maxWidth: 420,
+    background: '#ffffff',
+    borderRadius: 10,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+    overflow: 'hidden',
+    opacity:    mounted ? 1 : 0,
+    transform:  mounted ? 'translateY(0)' : 'translateY(16px)',
+    transition: 'opacity 0.4s ease, transform 0.4s ease',
+  };
+
+  const fieldWrap = { position: 'relative', marginBottom: 14 };
+
+  const iconBox = {
+    position: 'absolute', left: 0, top: 0, bottom: 0,
+    width: 42, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#ebf3fd', borderRight: '1px solid #d4e7fa',
+    borderTopLeftRadius: 6, borderBottomLeftRadius: 6,
+  };
+
+  const inputBase = {
+    width: '100%', boxSizing: 'border-box',
+    padding: '11px 12px 11px 50px',
+    border: '1px solid #d4e7fa', borderRadius: 6,
+    fontSize: 14, color: '#2d3748', background: '#f7fbff',
+    outline: 'none', fontFamily: 'inherit',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+  };
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#080f1a',
-      fontFamily: "'Outfit', sans-serif",
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div style={page}>
 
-      {/* ── Animated grid background ── */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: 'linear-gradient(rgba(0,194,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,194,255,0.04) 1px, transparent 1px)',
-        backgroundSize: '48px 48px',
-      }} />
+      {/* ── Card ── */}
+      <div style={card}>
 
-      {/* ── Radial glows ── */}
-      <div style={{
-        position: 'absolute', top: '-15%', right: '-10%',
-        width: 700, height: 700, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,194,255,0.12) 0%, transparent 65%)',
-        filter: 'blur(40px)', pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '-20%', left: '-15%',
-        width: 600, height: 600, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,119,255,0.1) 0%, transparent 65%)',
-        filter: 'blur(40px)', pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        width: 400, height: 400, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,194,255,0.04) 0%, transparent 70%)',
-        filter: 'blur(60px)', transform: 'translate(-50%,-50%)', pointerEvents: 'none',
-      }} />
+        {/* Top section: white background, logo centred */}
+        <div style={{ padding: '32px 32px 20px', textAlign: 'center', borderBottom: '1px solid #f0f4f8' }}>
+          <img
+            src="https://my.oodles.io/assets/icons/oodleslogo.svg"
+            alt="Oodles"
+            style={{ height: 80, objectFit: 'contain' }}
+            onError={e => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'block';
+            }}
+          />
+          {/* Text fallback */}
+          <span style={{ display: 'none', fontSize: 26, fontWeight: 800, color: '#1a4fa0', letterSpacing: -0.5 }}>
+            Oodles
+          </span>
+        </div>
 
-      {/* ── Floating particles ── */}
-      {PARTICLES.map(p => (
-        <div key={p.id} style={{
-          position: 'absolute',
-          left: `${p.x}%`, top: `${p.y}%`,
-          width: p.size, height: p.size,
-          borderRadius: '50%',
-          background: '#00c2ff',
-          opacity: p.opacity,
-          pointerEvents: 'none',
-          animation: `float-particle ${p.duration}s ease-in-out ${p.delay}s infinite`,
-        }} />
-      ))}
+        {/* Form section */}
+        <div style={{ padding: '24px 32px 28px' }}>
 
-      {/* ── Login card ── */}
-      <div style={{
-        width: '100%', maxWidth: 420,
-        margin: '0 16px',
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? 'translateY(0)' : 'translateY(24px)',
-        transition: 'opacity 0.6s ease, transform 0.6s ease',
-      }}>
-
-        {/* Card */}
-        <div style={{
-          background: 'rgba(10,20,35,0.85)',
-          border: '1px solid rgba(0,194,255,0.18)',
-          borderRadius: 24,
-          padding: '40px 36px',
-          backdropFilter: 'blur(24px)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,194,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}>
-
-          {/* Card inner glow top */}
-          <div style={{
-            position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-            width: '60%', height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(0,194,255,0.5), transparent)',
-          }} />
-
-          {/* ── Logo + heading ── */}
-          <div style={{ textAlign: 'center', marginBottom: 36 }}>
+          {/* Avatar icon */}
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 72, height: 72,
-              borderRadius: 20,
-              background: 'rgba(0,194,255,0.08)',
-              border: '1px solid rgba(0,194,255,0.2)',
-              marginBottom: 20,
-              boxShadow: '0 0 32px rgba(0,194,255,0.15)',
+              width: 60, height: 60, borderRadius: '50%',
+              border: '2px solid #d4e7fa', background: '#f7fbff',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <img
-                src="https://my.oodles.io/assets/icons/oodleslogo.svg"
-                alt="Oodles"
-                style={{ width: 44, height: 44, objectFit: 'contain' }}
-                onError={e => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-              {/* Fallback if logo fails */}
-              <span style={{
-                display: 'none', fontSize: 28, fontWeight: 800,
-                background: 'linear-gradient(135deg,#00c2ff,#0077ff)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              }}>O</span>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b8be8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
             </div>
-
-            <h1 style={{
-              fontSize: 22, fontWeight: 700, color: '#e8f4fd',
-              margin: '0 0 6px', letterSpacing: '-0.3px',
-            }}>
-              Oodles ERP Admin
-            </h1>
-            <p style={{ fontSize: 13, color: '#7a9bb5', margin: 0 }}>
-              Sign in to access the command centre
-            </p>
           </div>
 
-          {/* ── Form ── */}
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-            {/* Username */}
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#7a9bb5', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                Username
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{
-                  position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                  color: '#4a6a80', display: 'flex', alignItems: 'center',
-                }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={e => { setUsername(e.target.value); setError(''); }}
-                  placeholder="Enter username"
-                  autoComplete="username"
-                  required
-                  style={{
-                    width: '100%', padding: '12px 14px 12px 40px',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${error ? 'rgba(255,71,87,0.4)' : 'rgba(0,194,255,0.15)'}`,
-                    borderRadius: 12, fontSize: 14, color: '#e8f4fd',
-                    outline: 'none', fontFamily: 'Outfit, sans-serif',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                    boxSizing: 'border-box',
-                  }}
-                  onFocus={e => { e.target.style.borderColor = 'rgba(0,194,255,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(0,194,255,0.08)'; }}
-                  onBlur={e => { e.target.style.borderColor = error ? 'rgba(255,71,87,0.4)' : 'rgba(0,194,255,0.15)'; e.target.style.boxShadow = 'none'; }}
-                />
+          <form onSubmit={handleLogin}>
+            {/* Email */}
+            <div style={fieldWrap}>
+              <div style={iconBox}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b8be8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
               </div>
+              <input
+                type="email" value={email} required autoComplete="email"
+                placeholder="Email address"
+                onChange={e => { setEmail(e.target.value); setError(''); }}
+                style={inputBase}
+                onFocus={e => { e.target.style.borderColor='#3b8be8'; e.target.style.boxShadow='0 0 0 3px rgba(59,139,232,0.12)'; e.target.style.background='#fff'; }}
+                onBlur={e =>  { e.target.style.borderColor='#d4e7fa'; e.target.style.boxShadow='none'; e.target.style.background='#f7fbff'; }}
+              />
             </div>
 
             {/* Password */}
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#7a9bb5', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{
-                  position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                  color: '#4a6a80', display: 'flex', alignItems: 'center',
-                }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                </span>
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setError(''); }}
-                  placeholder="Enter password"
-                  autoComplete="current-password"
-                  required
-                  style={{
-                    width: '100%', padding: '12px 44px 12px 40px',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${error ? 'rgba(255,71,87,0.4)' : 'rgba(0,194,255,0.15)'}`,
-                    borderRadius: 12, fontSize: 14, color: '#e8f4fd',
-                    outline: 'none', fontFamily: 'Outfit, sans-serif',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                    boxSizing: 'border-box',
-                  }}
-                  onFocus={e => { e.target.style.borderColor = 'rgba(0,194,255,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(0,194,255,0.08)'; }}
-                  onBlur={e => { e.target.style.borderColor = error ? 'rgba(255,71,87,0.4)' : 'rgba(0,194,255,0.15)'; e.target.style.boxShadow = 'none'; }}
-                />
-                {/* Show/hide password toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShowPass(p => !p)}
-                  style={{
-                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#4a6a80', padding: 4, display: 'flex', alignItems: 'center',
-                  }}>
-                  {showPass ? (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                      <line x1="1" y1="1" x2="23" y2="23"/>
-                    </svg>
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  )}
-                </button>
+            <div style={{ ...fieldWrap, marginBottom: 6 }}>
+              <div style={iconBox}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b8be8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
               </div>
+              <input
+                type={showPass ? 'text' : 'password'} value={password} required
+                placeholder="Password" autoComplete="current-password"
+                onChange={e => { setPassword(e.target.value); setError(''); }}
+                style={{ ...inputBase, paddingRight: 42 }}
+                onFocus={e => { e.target.style.borderColor='#3b8be8'; e.target.style.boxShadow='0 0 0 3px rgba(59,139,232,0.12)'; e.target.style.background='#fff'; }}
+                onBlur={e =>  { e.target.style.borderColor='#d4e7fa'; e.target.style.boxShadow='none'; e.target.style.background='#f7fbff'; }}
+              />
+              <button type="button" onClick={() => setShowPass(p => !p)} style={{
+                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', color: '#90b8e0', display: 'flex', padding: 4,
+              }}>
+                {showPass
+                  ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
             </div>
 
-            {/* Error message */}
+            {/* Error */}
             {error && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                padding: '10px 14px', borderRadius: 10,
-                background: 'rgba(255,71,87,0.08)',
-                border: '1px solid rgba(255,71,87,0.25)',
+                padding: '9px 12px', marginBottom: 14, borderRadius: 6,
+                background: '#fef2f2', border: '1px solid #fecaca',
                 animation: 'shake 0.4s ease',
               }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff6b7a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
-                <span style={{ fontSize: 13, color: '#ff6b7a' }}>{error}</span>
+                <span style={{ fontSize: 13, color: '#dc2626' }}>{error}</span>
               </div>
             )}
 
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%', padding: '13px',
-                background: loading ? 'rgba(0,194,255,0.3)' : 'linear-gradient(135deg, #00c2ff, #0077ff)',
-                border: 'none', borderRadius: 12,
-                fontSize: 14, fontWeight: 700,
-                color: loading ? 'rgba(8,15,26,0.6)' : '#080f1a',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: 'Outfit, sans-serif',
-                marginTop: 4,
-                transition: 'all 0.2s',
-                boxShadow: loading ? 'none' : '0 0 24px rgba(0,194,255,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
-              onMouseEnter={e => { if (!loading) { e.target.style.transform = 'scale(1.02)'; e.target.style.boxShadow = '0 0 36px rgba(0,194,255,0.45)'; } }}
-              onMouseLeave={e => { e.target.style.transform = 'scale(1)'; e.target.style.boxShadow = loading ? 'none' : '0 0 24px rgba(0,194,255,0.3)'; }}
+            {/* Login button */}
+            <button type="submit" disabled={loading} style={{
+              width: '100%', padding: '12px',
+              background: loading ? '#93c5fd' : 'linear-gradient(135deg, #1a4fa0, #2563eb)',
+              border: 'none', borderRadius: 6,
+              fontSize: 14, fontWeight: 600, color: '#fff',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit', marginTop: 8,
+              boxShadow: loading ? 'none' : '0 3px 12px rgba(37,99,235,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              transition: 'all 0.2s',
+            }}
+              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background='linear-gradient(135deg,#163e82,#1d4ed8)'; e.currentTarget.style.boxShadow='0 5px 18px rgba(37,99,235,0.4)'; }}}
+              onMouseLeave={e => { if (!loading) { e.currentTarget.style.background='linear-gradient(135deg,#1a4fa0,#2563eb)'; e.currentTarget.style.boxShadow='0 3px 12px rgba(37,99,235,0.3)'; }}}
             >
-              {loading ? (
-                <>
-                  <div style={{
-                    width: 16, height: 16, borderRadius: '50%',
-                    border: '2px solid rgba(8,15,26,0.3)',
-                    borderTopColor: '#080f1a',
-                    animation: 'spin 0.8s linear infinite',
-                  }} />
-                  Signing in…
-                </>
-              ) : (
-                <>
-                  Sign In
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </>
-              )}
+              {loading
+                ? <><div style={{ width:15,height:15,borderRadius:'50%',border:'2px solid rgba(255,255,255,0.4)',borderTopColor:'#fff',animation:'spin 0.8s linear infinite' }} />Signing in…</>
+                : 'Login'
+              }
             </button>
-          </form>
 
-          {/* ── Footer ── */}
-          <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid rgba(0,194,255,0.08)', textAlign: 'center' }}>
-            <p style={{ fontSize: 11, color: 'rgba(122,155,181,0.45)', margin: 0 }}>
-              Oodles Technologies · Admin Portal · Restricted Access
-            </p>
-          </div>
+            {/* Keep me logged in + Forgot */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:14 }}>
+              <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#64748b', cursor:'pointer' }}>
+                <input type="checkbox" style={{ accentColor:'#2563eb', width:13, height:13 }} />
+                Keep me logged in
+              </label>
+              <button type="button" style={{ fontSize:13, color:'#2563eb', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', padding:0 }}>
+                Forgot Password?
+              </button>
+            </div>
+          </form>
         </div>
 
-        {/* Below card tag */}
-        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'rgba(122,155,181,0.35)' }}>
-          © {new Date().getFullYear()} Oodles Technologies Pvt. Ltd.
-        </p>
+        {/* Bottom: Recommended browser */}
+        <div style={{ padding:'16px 32px 20px', borderTop:'1px solid #f0f4f8', textAlign:'center' }}>
+          <p style={{ fontSize:12, color:'#94a3b8', margin:'0 0 8px' }}>Recommended Browser</p>
+          <div style={{ display:'flex', justifyContent:'center' }}>
+            {/* Chrome-coloured circle icon */}
+            <svg width="28" height="28" viewBox="0 0 28 28">
+              <circle cx="14" cy="14" r="14" fill="#f1f5f9"/>
+              <circle cx="14" cy="14" r="6" fill="#4285F4"/>
+              <circle cx="14" cy="14" r="3.5" fill="#fff"/>
+              {/* Chrome segments */}
+              <path d="M14 8 h7 a7 7 0 0 1 -3.5 6.06z" fill="#EA4335"/>
+              <path d="M14 8 h-7 a7 7 0 0 0 3.5 6.06z" fill="#FBBC05"/>
+              <path d="M7 14 a7 7 0 0 0 10.5 6.06L14 14z" fill="#34A853"/>
+              <circle cx="14" cy="14" r="3.5" fill="#fff"/>
+            </svg>
+          </div>
+        </div>
       </div>
 
-      {/* ── Keyframe styles ── */}
+      {/* Footer */}
+      <p style={{ marginTop:16, fontSize:12, color:'rgba(255,255,255,0.5)', textAlign:'center' }}>
+        © {new Date().getFullYear()} Oodles Technologies Pvt. Ltd.
+      </p>
+
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
-
-        @keyframes float-particle {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          33%       { transform: translateY(-12px) translateX(4px); }
-          66%       { transform: translateY(6px) translateX(-4px); }
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20%       { transform: translateX(-6px); }
-          40%       { transform: translateX(6px); }
-          60%       { transform: translateX(-4px); }
-          80%       { transform: translateX(4px); }
-        }
-
-        input::placeholder { color: rgba(122,155,181,0.45); }
-        input:-webkit-autofill {
-          -webkit-box-shadow: 0 0 0 100px rgba(10,20,35,0.95) inset !important;
-          -webkit-text-fill-color: #e8f4fd !important;
-        }
+        @keyframes spin  { to { transform: rotate(360deg); } }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 60%{transform:translateX(5px)} 80%{transform:translateX(-2px)} }
+        input::placeholder { color: #a0b8d0; }
+        input:-webkit-autofill { -webkit-box-shadow: 0 0 0 100px #f7fbff inset !important; -webkit-text-fill-color: #2d3748 !important; }
       `}</style>
     </div>
   );

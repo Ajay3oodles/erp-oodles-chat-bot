@@ -17,13 +17,14 @@ export default function WelcomeScreen({ onSend }) {
         height: '100%',
         padding: '20px 16px',
         textAlign: 'center',
-        background: '#f7f9fc',
+        /* ── matches the light-blue chat background ── */
+        background: 'transparent',
       }}
     >
       <h3
         style={{
           fontWeight: 600,
-          color: '#111827',
+          color: '#1e3a8a',
           fontSize: 15,
           margin: '0 0 4px',
         }}
@@ -33,7 +34,7 @@ export default function WelcomeScreen({ onSend }) {
       <p
         style={{
           fontSize: 12,
-          color: '#6b7280',
+          color: '#3b5ea6',
           lineHeight: 1.5,
           maxWidth: 260,
           margin: '0 0 18px',
@@ -43,7 +44,6 @@ export default function WelcomeScreen({ onSend }) {
         your business.
       </p>
 
-      {/* Single column list of starters, like Oodles dark screen */}
       <div
         style={{
           width: '100%',
@@ -67,25 +67,24 @@ export default function WelcomeScreen({ onSend }) {
               cursor: 'pointer',
               transition:
                 'box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease',
+              /* ── white pills on blue bg, like Image 2 ── */
               background: '#ffffff',
-              border: '1px solid #e5e7eb',
-              color: '#111827',
-              boxShadow: '0 1px 2px rgba(15,23,42,0.06)',
+              border: '1.5px solid rgba(26,86,219,0.2)',
+              color: '#1e3a8a',
+              boxShadow: '0 1px 4px rgba(26,86,219,0.1)',
               fontFamily:
                 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow =
-                '0 2px 6px rgba(15,23,42,0.12)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(26,86,219,0.2)';
               e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.borderColor = '#cbd5f5';
-              e.currentTarget.style.background = '#f3f4ff';
+              e.currentTarget.style.borderColor = '#1a56db';
+              e.currentTarget.style.background = '#eff6ff';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow =
-                '0 1px 2px rgba(15,23,42,0.06)';
+              e.currentTarget.style.boxShadow = '0 1px 4px rgba(26,86,219,0.1)';
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = '#e5e7eb';
+              e.currentTarget.style.borderColor = 'rgba(26,86,219,0.2)';
               e.currentTarget.style.background = '#ffffff';
             }}
           >
@@ -93,8 +92,8 @@ export default function WelcomeScreen({ onSend }) {
               style={{
                 display: 'inline-block',
                 marginRight: 8,
-                color: '#4f46e5',
-                fontWeight: 500,
+                color: '#1a56db',
+                fontWeight: 600,
               }}
             >
               →
@@ -107,7 +106,7 @@ export default function WelcomeScreen({ onSend }) {
       <p
         style={{
           fontSize: 11,
-          color: '#9ca3af',
+          color: '#3b5ea6',
           margin: 0,
         }}
       >
