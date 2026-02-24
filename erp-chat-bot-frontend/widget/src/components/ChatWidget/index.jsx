@@ -141,7 +141,7 @@ export default function ChatWidget({ config }) {
 
           {/* Trigger: white circle with vivid blue glow ring — matches Image 1 */}
           <button onClick={handleOpen} aria-label="Open chat" style={{
-            width: 64, height: 64, borderRadius: '50%', border: 'none',
+            width: 60, height: 60, borderRadius: '50%', border: 'none',
             background: '#ffffff',
             boxShadow: '0 0 0 3px #007ADB, 0 0 20px 6px rgba(0,122,219,0.6), 0 4px 20px rgba(0,0,0,0.15)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
