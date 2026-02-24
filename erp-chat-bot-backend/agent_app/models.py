@@ -92,17 +92,17 @@ class Session(BaseEntity):
 
 class User(AbstractUser):
     """
-    Custom user model. Extends Django's AbstractUser so all
-    built-in auth (admin panel, password hashing, JWT) works out of the box.
+    Custom user model.
     """
     name  = models.CharField(max_length=255, blank=True)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
 
-
-
     def __str__(self):
         return self.username
+
+    class Meta:
+        db_table = "user"
 
 
 class Chat(BaseEntity):
