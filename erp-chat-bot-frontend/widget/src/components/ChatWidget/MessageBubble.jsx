@@ -32,25 +32,25 @@ export default function MessageBubble({ message, animate }) {
 
   return (
     <div style={{
-      display:'flex',
+      display: 'flex',
       flexDirection: isUser ? 'row-reverse' : 'row',
-      alignItems:'flex-end',
-      gap:8, marginBottom:10,
+      alignItems: 'flex-end',
+      gap: 8, marginBottom: 10,
     }}>
       {/* Bot avatar */}
       {!isUser && (
         <div style={{
-          width:28, height:28, borderRadius:'50%',
-          background:'#ffffff',
-          border:'1.5px solid #c7dcf8',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          flexShrink:0, padding:3,
-          boxShadow:'0 1px 4px rgba(26,86,219,0.12)',
+          width: 28, height: 28, borderRadius: '50%',
+          background: '#ffffff',
+          border: '1.5px solid #b3d9f5',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, padding: 3,
+          boxShadow: '0 1px 4px rgba(0,122,219,0.12)',
         }}>
           <img
             src="https://artificialintelligence.oodles.io/public/css/svg/icon.png"
             alt="AI"
-            style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
             onError={e => { e.target.style.display = 'none'; }}
           />
         </div>
@@ -58,27 +58,27 @@ export default function MessageBubble({ message, animate }) {
 
       {/* Bubble */}
       <div style={{
-        maxWidth:'75%',
-        padding:'9px 13px',
+        maxWidth: '75%',
+        padding: '9px 13px',
         borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
         background: isUser
-          ? 'linear-gradient(135deg, #1a56db, #1565C0)'
+          ? 'linear-gradient(135deg, #007ADB, #005fa3)'
           : '#ffffff',
-        color: isUser ? '#ffffff' : '#1a237e',
-        fontSize:13, lineHeight:1.55,
+        color: isUser ? '#ffffff' : '#00457a',
+        fontSize: 13, lineHeight: 1.55,
         boxShadow: isUser
-          ? '0 2px 10px rgba(26,86,219,0.28)'
-          : '0 2px 8px rgba(26,86,219,0.09)',
-        border: isUser ? 'none' : '1px solid #dbeafe',
-        wordBreak:'break-word', whiteSpace:'pre-wrap',
+          ? '0 2px 10px rgba(0,122,219,0.3)'
+          : '0 2px 8px rgba(0,122,219,0.08)',
+        border: isUser ? 'none' : '1px solid #c8e6ff',
+        wordBreak: 'break-word', whiteSpace: 'pre-wrap',
       }}>
         {displayed}
         {stillTyping && (
           <span style={{
-            display:'inline-block', width:2, height:'1em',
-            background:'#1a56db', marginLeft:2,
-            verticalAlign:'text-bottom',
-            animation:'ow-blink 0.7s step-end infinite',
+            display: 'inline-block', width: 2, height: '1em',
+            background: '#007ADB', marginLeft: 2,
+            verticalAlign: 'text-bottom',
+            animation: 'ow-blink 0.7s step-end infinite',
           }} />
         )}
         <style>{`

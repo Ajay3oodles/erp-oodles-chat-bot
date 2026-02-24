@@ -17,27 +17,27 @@ export default function WelcomeScreen({ onSend }) {
         height: '100%',
         padding: '20px 16px',
         textAlign: 'center',
-        /* ── matches the light-blue chat background ── */
         background: 'transparent',
       }}
     >
       <h3
         style={{
-          fontWeight: 600,
-          color: '#1e3a8a',
-          fontSize: 15,
-          margin: '0 0 4px',
+          fontWeight: 700,
+          color: '#00457a',
+          fontSize: 15.5,
+          margin: '0 0 5px',
+          letterSpacing: '-0.01em',
         }}
       >
         Hi! I'm the OodlesERP Assistant
       </h3>
       <p
         style={{
-          fontSize: 12,
-          color: '#3b5ea6',
-          lineHeight: 1.5,
-          maxWidth: 260,
-          margin: '0 0 18px',
+          fontSize: 12.5,
+          color: '#1a6aaa',
+          lineHeight: 1.55,
+          maxWidth: 270,
+          margin: '0 0 20px',
         }}
       >
         Ask me anything about our ERP solutions, services, or how we can help
@@ -49,8 +49,8 @@ export default function WelcomeScreen({ onSend }) {
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
-          marginBottom: 16,
+          gap: 9,
+          marginBottom: 18,
         }}
       >
         {STARTER_QUESTIONS.map((q) => (
@@ -60,31 +60,28 @@ export default function WelcomeScreen({ onSend }) {
             style={{
               width: '100%',
               textAlign: 'left',
-              padding: '10px 14px',
+              padding: '11px 16px',
               borderRadius: 9999,
-              fontSize: 12,
+              fontSize: 12.5,
               lineHeight: 1.45,
               cursor: 'pointer',
-              transition:
-                'box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease',
-              /* ── white pills on blue bg, like Image 2 ── */
+              transition: 'box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease, background 0.18s ease',
               background: '#ffffff',
-              border: '1.5px solid rgba(26,86,219,0.2)',
-              color: '#1e3a8a',
-              boxShadow: '0 1px 4px rgba(26,86,219,0.1)',
-              fontFamily:
-                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+              border: '1.5px solid rgba(0,122,219,0.22)',
+              color: '#00457a',
+              boxShadow: '0 1px 5px rgba(0,122,219,0.09)',
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(26,86,219,0.2)';
+              e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,122,219,0.2)';
               e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.borderColor = '#1a56db';
-              e.currentTarget.style.background = '#eff6ff';
+              e.currentTarget.style.borderColor = '#007ADB';
+              e.currentTarget.style.background = '#e8f4ff';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 1px 4px rgba(26,86,219,0.1)';
+              e.currentTarget.style.boxShadow = '0 1px 5px rgba(0,122,219,0.09)';
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'rgba(26,86,219,0.2)';
+              e.currentTarget.style.borderColor = 'rgba(0,122,219,0.22)';
               e.currentTarget.style.background = '#ffffff';
             }}
           >
@@ -92,8 +89,8 @@ export default function WelcomeScreen({ onSend }) {
               style={{
                 display: 'inline-block',
                 marginRight: 8,
-                color: '#1a56db',
-                fontWeight: 600,
+                color: '#007ADB',
+                fontWeight: 700,
               }}
             >
               →
@@ -105,9 +102,10 @@ export default function WelcomeScreen({ onSend }) {
 
       <p
         style={{
-          fontSize: 11,
-          color: '#3b5ea6',
+          fontSize: 11.5,
+          color: '#1a6aaa',
           margin: 0,
+          opacity: 0.85,
         }}
       >
         Or type your own question below

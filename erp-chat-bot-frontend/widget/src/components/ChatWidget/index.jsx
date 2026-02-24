@@ -13,8 +13,8 @@ const Spinner = () => (
     <div style={{
       width: '24px', height: '24px',
       borderRadius: '50%',
-      border: '3px solid rgba(255,255,255,0.3)',
-      borderTopColor: '#ffffff',
+      border: '3px solid rgba(0,122,219,0.2)',
+      borderTopColor: '#007ADB',
       animation: 'spin 0.8s linear infinite'
     }} />
   </div>
@@ -27,8 +27,8 @@ const TypingIndicator = () => (
     background: '#ffffff',
     padding: '12px 16px',
     borderRadius: '16px 16px 16px 4px',
-    boxShadow: '0 2px 8px rgba(30,58,138,0.1)',
-    border: '1px solid rgba(30,58,138,0.08)',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+    border: '1px solid rgba(0,0,0,0.06)',
     marginBottom: '16px',
     width: 'fit-content',
     display: 'flex',
@@ -44,7 +44,7 @@ const TypingIndicator = () => (
     {[0, 1, 2].map(i => (
       <div key={i} style={{
         width: '8px', height: '8px',
-        background: '#1a56db',
+        background: '#007ADB',
         borderRadius: '50%',
         animation: `bounce 1.4s infinite ease-in-out both`,
         animationDelay: `${i * 0.16}s`,
@@ -70,6 +70,13 @@ export default function ChatWidget({ config }) {
     isLoading, error, animatedIds, messagesEndRef,
     sendMessage, startNewConversation, clearError,
   } = useChat();
+
+  // Mark conversation as started if messages were loaded from history
+  useEffect(() => {
+    if (messages.length > 0 && !isLoading && !conversationStarted) {
+      setConversationStarted(true);
+    }
+  }, [messages, isLoading, conversationStarted]);
 
   useEffect(() => {
     const handleOpen = () => setOpen(true);
@@ -107,10 +114,11 @@ export default function ChatWidget({ config }) {
   };
 
   // Show WelcomeScreen only when no conversation has started and no messages exist
-  const showWelcome = !conversationStarted && !isLoading && messages.length === 0;
+  const showWelcome = !conversationStarted && messages.length === 0;
 
   return (
     <>
+      {/* ── Floating Trigger Button ── */}
       {!open && (
         <div style={{
           position: 'fixed', bottom: 24, right: 24,
@@ -120,7 +128,7 @@ export default function ChatWidget({ config }) {
           {showTooltip && (
             <div style={{
               background: '#ffffff', borderRadius: 14,
-              boxShadow: '0 4px 16px rgba(26, 86, 219, 0.18), 0 0 0 1px rgba(0,0,0,0.03)',
+              boxShadow: '0 4px 16px rgba(37,99,235,0.18), 0 0 0 1px rgba(0,0,0,0.03)',
               padding: '10px 16px', fontSize: 13, color: '#1e293b',
               border: '1px solid #dbeafe',
               maxWidth: 240, display: 'flex', alignItems: 'center', gap: 8,
@@ -130,16 +138,24 @@ export default function ChatWidget({ config }) {
               <span style={{ fontWeight: 500 }}>Hello! How can we help?</span>
             </div>
           )}
+
+          {/* Trigger: white circle with vivid blue glow ring — matches Image 1 */}
           <button onClick={handleOpen} aria-label="Open chat" style={{
             width: 64, height: 64, borderRadius: '50%', border: 'none',
             background: '#ffffff',
-            boxShadow: '0 4px 20px rgba(26,86,219,0.3)',
+            boxShadow: '0 0 0 3px #007ADB, 0 0 20px 6px rgba(0,122,219,0.6), 0 4px 20px rgba(0,0,0,0.15)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 10,
-            position: 'relative', transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+            padding: 10, position: 'relative',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = 'scale(1.08)';
+            e.currentTarget.style.boxShadow = '0 0 0 3px #007ADB, 0 0 30px 10px rgba(0,122,219,0.7), 0 4px 24px rgba(0,0,0,0.18)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 0 0 3px #007ADB, 0 0 20px 6px rgba(0,122,219,0.6), 0 4px 20px rgba(0,0,0,0.15)';
+          }}
           >
             <img
               src="https://artificialintelligence.oodles.io/public/css/svg/icon.png"
@@ -149,12 +165,12 @@ export default function ChatWidget({ config }) {
             />
             {unreadCount > 0 && (
               <span style={{
-                position: 'absolute', top: 0, right: 0,
+                position: 'absolute', top: -2, right: -2,
                 width: 20, height: 20, borderRadius: '50%',
                 background: '#ef4444', color: '#ffffff',
                 fontSize: 11, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid #fff'
+                border: '2px solid #fff',
               }}>
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
@@ -163,86 +179,121 @@ export default function ChatWidget({ config }) {
         </div>
       )}
 
+      {/* ── Chat Panel ── */}
       {open && (
         <div style={{
-          position: 'fixed', bottom: 24, right: 24,
-          width: Math.min(380, window.innerWidth - 32),
-          height: Math.min(600, window.innerHeight - 48),
-          borderRadius: 16, overflow: 'hidden',
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          /* Exact dimensions: 386×558, responsive on small screens */
+          width: 'min(386px, calc(100vw - 24px))',
+          height: 'min(558px, calc(100vh - 48px))',
+          borderRadius: 20, overflow: 'hidden',
           display: 'flex', flexDirection: 'column',
-          background: '#dbeafe',
-          boxShadow: '0 20px 50px rgba(26,86,219,0.2), 0 0 0 1px rgba(26,86,219,0.1)',
+          background: '#f0f4ff',
+          boxShadow: '0 24px 64px rgba(0,122,219,0.22), 0 0 0 1px rgba(0,122,219,0.1)',
           fontFamily: '"Outfit", sans-serif',
           zIndex: 2147483647,
         }}>
-          {/* Header */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '16px 20px',
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #1a56db 100%)',
-            flexShrink: 0,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 52, height: 52, borderRadius: '50%',
-                background: '#ffffff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-                border: '2px solid rgba(255,255,255,0.7)',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.18)',
-                padding: 6,
-              }}>
-                <img
-                  src="https://artificialintelligence.oodles.io/public/css/svg/icon.png"
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                  onError={e => { e.target.style.display = 'none'; }}
-                  alt="Oodles AI"
-                />
+
+          {/* ── Header ── */}
+          <div style={{ position: 'relative', flexShrink: 0, zIndex: 2 }}>
+            {/* Bright blue gradient — matches Image 1 exactly */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0066c0 0%, #007ADB 50%, #2196f3 100%)',
+              padding: '18px 18px 22px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              borderRadius: '20px 20px 0 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+
+                {/* Logo — exact specified properties: padding:6px h:60px w:71px border-radius:50% bg:#fff */}
+                <div style={{
+                  padding: '6px',
+                  height: '60px',
+                  width: '71px',
+                  borderRadius: '50%',
+                  background: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+                  overflow: 'hidden',
+                }}>
+                  <img
+                    src="https://artificialintelligence.oodles.io/public/css/svg/icon.png"
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                    onError={e => { e.target.style.display = 'none'; }}
+                    alt="ERP"
+                  />
+                </div>
+
+                {/* ERP branding */}
+                <div>
+                  <h3 style={{
+                    margin: 0, fontSize: 16, fontWeight: 700,
+                    color: '#ffffff', letterSpacing: '-0.01em',
+                  }}>
+                    ERP Solution
+                  </h3>
+                  <p style={{
+                    margin: '3px 0 0', fontSize: 11.5,
+                    color: 'rgba(255,255,255,0.82)', lineHeight: 1.35,
+                  }}>
+                    Oodles Technologies
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#ffffff' }}>ERP Solution</h3>
-                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.3 }}>
-                  Oodles Technologies
-                </p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button onClick={handleNewConversation} title="New conversation" style={{
-                background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
-                cursor: 'pointer', padding: 7, borderRadius: 8, color: 'rgba(255,255,255,0.85)',
-                transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
-              </button>
+
+              {/* Close button only — matches Image 1 (single ✕) */}
               <button onClick={() => setOpen(false)} style={{
-                background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
-                cursor: 'pointer', padding: 7, borderRadius: 8, color: 'rgba(255,255,255,0.85)',
-                transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 30, height: 30,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#ffffff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: '50%',
+                transition: 'background 0.18s',
+                alignSelf: 'flex-start',
+                marginTop: 2,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.3)'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
+            </div>
+
+            {/* Very subtle curve — almost flat, like Image 2 reference */}
+            <div style={{
+              position: 'absolute', bottom: -1, left: 0, right: 0,
+              lineHeight: 0, zIndex: 3,
+            }}>
+              <svg viewBox="0 0 380 12" preserveAspectRatio="none"
+                style={{ width: '100%', height: 12, display: 'block' }}>
+                <path d="M0,0 C190,12 190,12 380,0 L380,12 L0,12 Z" fill="#f0f4ff" />
+              </svg>
             </div>
           </div>
 
-          {/* Messages Area */}
+          {/* ── Messages / Welcome Area ── */}
           <div style={{
-            flex: 1, overflowY: 'auto', padding: '20px',
+            flex: 1, overflowY: 'auto',
+            padding: '10px 18px 18px',
             display: 'flex', flexDirection: 'column',
-            background: '#dbeafe', scrollBehavior: 'smooth'
+            background: '#f0f4ff', scrollBehavior: 'smooth',
           }}>
-            {isLoading && <Spinner />}
+            {/* Only show loading spinner during initial load, not on widget reopen */}
+            {isLoading && messages.length === 0 && <Spinner />}
 
             {/* Welcome screen — shown only when no conversation has started */}
             {showWelcome && <WelcomeScreen onSend={handleSend} />}
 
-            {/* Messages — only rendered after conversation starts */}
-            {!isLoading && messages.map(msg => (
+            {/* Messages — render if they exist, even if still loading */}
+            {messages.map(msg => (
               <MessageBubble
                 key={msg.id}
                 message={msg}
@@ -254,13 +305,16 @@ export default function ChatWidget({ config }) {
 
             {error && (
               <div style={{
-                margin: '10px 0', padding: '12px', borderRadius: 8,
+                margin: '10px 0', padding: '12px', borderRadius: 10,
                 background: '#fef2f2', border: '1px solid #fecaca',
                 color: '#ef4444', fontSize: 13,
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
                 <span>{error}</span>
-                <button onClick={clearError} style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontWeight: 600 }}>✕</button>
+                <button onClick={clearError} style={{
+                  border: 'none', background: 'transparent',
+                  color: '#ef4444', cursor: 'pointer', fontWeight: 600,
+                }}>✕</button>
               </div>
             )}
 
